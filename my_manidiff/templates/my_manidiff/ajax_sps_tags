@@ -1,0 +1,9 @@
+{% load static %}
+
+{% autoescape off %}
+
+{% for v in versions %}
+{{v}}{% if not forloop.last %},{% endif %}
+{% endfor %}
+
+{% endautoescape %}

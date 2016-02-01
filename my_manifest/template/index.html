@@ -1,0 +1,96 @@
+{% extends "base.html" %} 
+
+
+{% block content %} 
+    {% include "oc6web-h1-header.html" %} 
+<div class="row hidden intel-box" id="error-box">
+    <div class="alert alert-danger">
+        Cannot submit unless you fill out all 3 elements.
+    </div>
+</div>
+<div class="form-group">
+    <form method="GET" id="submitForm">
+        {% csrf_token %}
+        <div class="input-group">
+            <span class="input-group-addon">Compare</span>
+            <input type="text" id="id_baseline1" name="file1" class="form-control" placeholder="e.g. XMM7360_01.1511.00">      
+            <span class="input-group-addon">with</span>
+            <input type="text" id="id_baseline2" name="file2" class="form-control" placeholder="e.g. SOFIA-LTE_LPOP_MR1_SIT_PUBLISHER_933">
+            <span class="input-group-btn">
+                <input type="submit" value="Submit!" class="btn btn-default" />
+            </span>
+        </div>
+
+    </form>
+</div>
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+
+<script>
+  $(function() {
+    '''
+     availableTags = [  //without var, availableTags is global! 
+      "XMM7360_01.1511.00",
+      "XMM7360_01.1511.01",
+      "XMM7360_01.1511.02",
+      "XMM7360_01.1515.00",
+      "XMM7360_01.1515.01",
+      "XMM7360_01.1515.02",
+      "XMM7360_01.1521.00",
+      "XMM7360_01.1521.01",
+      "XMM7360_01.1525.00",
+      "XMM7360_01.1525.01",
+      "XMM7360_01.2051.00",
+      "XMM7360_01.5061.01",
+      "XMM7460_01.1511.00",
+      "XMM7460_01.1511.01",
+      "XMM7460_01.1511.02",
+      "XMM7460_01.1515.00",
+      "XMM7460_01.1515.01",
+      "XMM7460_01.1515.02",
+      "XMM7460_01.1521.00",
+      "XMM7460_01.1521.01",
+      "XMM7460_01.1525.00",
+      "XMM7460_01.1525.01",
+      "XMM7460_01.2051.00",
+      "XMM7460_01.5061.01",
+      "XMM7480_01.1511.00",
+      "XMM7480_01.1511.01",
+      "XMM7480_01.1511.02",
+      "XMM7480_01.1515.00",
+      "XMM7480_01.1515.01",
+      "XMM7480_01.1515.02",
+      "XMM7480_01.1521.00",
+      "XMM7480_01.1521.01",
+      "XMM7480_01.1525.00",
+      "XMM7480_01.1525.01",
+      "XMM7480_01.2051.00",
+      "XMM7480_01.5061.01"    
+    ];'''
+        //post(url, data, callback)
+        $.post("/my_manidiff/ajax", //url
+        { //data
+          csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val(),
+          action: "get_sps_tags",
+          //project_id: id,
+        },
+        function(data, status) {  //callback
+              // data stores the return text and status stores success/failure
+              availableTags = [];
+              temp = data.split(",");
+              for ( i=0; i<temp.length; i++ )  {
+                  availableTags.push( temp[i].trim() );
+              }
+              $( "#id_baseline1" ).autocomplete({
+                  source: availableTags
+              });
+              $( "#id_baseline2" ).autocomplete({
+                  source: availableTags
+              });
+        }
+      ); // end post
+    });
+
+  </script>
+
+{% endblock content %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %} 
+
+
+{% block content %} 
+    {% include "oc6web-h1-header.html" %} 
+    <div class="row">{{note}}</div> 
+{% endblock %}
