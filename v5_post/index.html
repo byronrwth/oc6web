@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "oc6web-h1-header.html" %}
+{% include "manifest/help_index.html" %}
+
+<div class="row hidden intel-box" id="error-box">
+    <div class="alert alert-danger">
+        Cannot submit unless you fill out all 3 elements.
+    </div>
+</div>
+<div class="form-group">
+    <form method="GET" id="submitForm">
+        {% csrf_token %}
+        <div class="input-group">
+            <span class="input-group-addon">Compare</span>
+            <input type="text" id="id_baseline1" name="file1" class="form-control" placeholder="e.g. XMM7360_01.1511.00">
+            <span class="input-group-addon">with</span>
+            <input type="text" id="id_baseline2" name="file2" class="form-control" placeholder="e.g. SOFIA-LTE_LPOP_MR1_SIT_PUBLISHER_933">
+            <span class="input-group-btn">
+                <input type="submit" value="Submit!" class="btn btn-default" />
+            </span>
+        </div>
+    </form>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script>
+      //var baseline = $("input[name=file1]").on("keyup", function() { console.log($(this).val()); });
+      //console.log(baseline);
+
+      var f_source =  function(request, response) {
+        $.post("/mani/ajax", 
+        { 
+          productid: "XMM7560",    
+          //productid : $("input[name=file1]").on("keyup", function() { console.log($(this).val()); }).val(),
+          //productid : $("input[name=file1]").on("keyup", function() { console.log($(this).val()); }),
+          
+          //productid : $('[name=file1]').on("keyup", function() { console.log($(this).val()); }).val(),
+          
+          //productid : $('[name=file1]').val(),
+          csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val(),
+          action: "get_sps_tags",
+          //project_id: id,
+        },
+        function(data, status) {  
+            //var baseline = $('#id_baseline1').val(); 
+            //console.log(" print out input: ");
+            //console.log(baseline);
+
+              availableTags = [];
+              temp = data.split(",");
+              for ( i=0; i<temp.length; i++ )  {
+                  availableTags.push( temp[i].trim() );
+              }
+
+        }
+        ); // post
+       }; // f_source
+
+      $(function(){
+
+        $( "#id_baseline1" ).autocomplete({
+            source: f_source,
+            //source: ["xmmtest1", "xmmtest2"],
+            maxLength: 1,
+            highlight:true,
+            select: function( event, ui ) {
+                console.log("choosed " + this.value);
+                return false;
+            }
+            
+        }).data( "ui-autocomplete" )._renderItem = function( ul, item ) {
+                return $( "<li>" ).append( "<a href='/refer" + item[0]+ "?srcterm=" + term + "'>" + item[1] + "</a>" ).appendTo( ul );
+                };
+     });
+
+    </script>
+    <div class="input-group intel-box" id="format">
+        <h4>Select format:</h4>
+        <div class="radio">
+            <label>
+                <input name="format" type="radio" value="table" checked /> Compressed table <small class="text-muted">(Best suited for <b>Release Notes</b> generation)</small>
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input name="format" type="radio" value="list" /> Detailed list <small class="text-muted">(For complete changeset including merges)</small>
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input name="format" type="radio" value="excel" /> Formatted as <i class="intelicon intelicon-ms-excel-solid text-primary"></i>Excel document <small class="text-muted">(With additional UTP information)</small>
+            </label>
+        </div>
+    </div>
+    <div class="intel-box text-muted">
+        <h4>Hint:</h4>
+        <i class="intelicon-find-an-expert intelicon-active-info intelicon-large"></i> 
+        Feel free to specify each input as <b>SPS Version</b> or <b>TCloud testname</b>.
+    </div>
+
+</div>
+<script>
+/*
+    $('#format input').on('change', function(e) {
+        console.log(e);
+        var action = e.currentTarget.value;
+        console.log("Updating action to "+action);
+        $('#submitForm').attr('action', action);
+    });
+*/
+    $('#submitForm').submit(function(ev) {
+            var a = $('#submitForm input[name=file1]');
+            var b = $('#submitForm input[name=file2]');
+            var c = $('input[name=format]:checked');
+
+            if (a.val() && b.val() && c.val()) {
+                var format = c.val();
+                var params = ['/mani', 
+                                encodeURIComponent(a.val()), 
+                                encodeURIComponent(b.val())]
+                if (format == 'excel') {
+                    params.push(format);
+                } else {
+                    params.push('#'+format);
+                }
+                window.location = params.join('/');
+            }
+            else {
+                if (!a.val())
+                    a.attr('class', a.attr('class') + ' has-error');
+                if (!b.val())
+                    b.attr('class', b.attr('class') + ' has-error');
+                if (!c.val()) 
+                    c.attr('class', c.attr('class') + ' has-error');
+                $('#error-box').show();
+            }
+            ev.preventDefault();
+    });
+</script>
+
+{% endblock content %}
+
