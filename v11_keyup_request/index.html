@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "oc6web-h1-header.html" %}
+{% include "manifest/help_index.html" %}
+
+<div class="row hidden intel-box" id="error-box">
+    <div class="alert alert-danger">
+        Cannot submit unless you fill out all 3 elements.
+    </div>
+</div>
+<div class="form-group">
+    <form method="GET" id="submitForm">
+        {% csrf_token %}
+        <div class="input-group">
+            <span class="input-group-addon">Compare</span>
+            <input type="text" id="id_baseline1" name="file1" class="form-control" placeholder="e.g. XMM7360_01.1511.00">
+            <div id="rspdisplay"></div>
+            <span class="input-group-addon">with</span>
+            <input type="text" id="id_baseline2" name="file2" class="form-control" placeholder="e.g. SOFIA-LTE_LPOP_MR1_SIT_PUBLISHER_933">
+            <span class="input-group-btn">
+                <input type="submit" value="Submit!" class="btn btn-default" />
+            </span>
+        </div>
+    </form>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script>
+    $(function() {
+
+
+      var cache = {};
+
+
+      var rspdisplay = $('#rspdisplay');
+
+
+      var serving = false;
+      var term = '';
+
+      var typedelay = (function(){
+        console.log("reset timer!");
+
+        var timer = 0;
+        return function(callback, ms){
+            //console.log("before clearTimeout timer= " + timer);
+            clearTimeout (timer);
+            //console.log(" ms= " + ms);
+            //console.log("after clearTimeout timer= " + timer);
+            timer = setTimeout(callback, ms);
+            //console.log("after setTimeout timer= " + timer);
+            //console.log("after setTimeout ms= " + ms);
+        };
+      })();
+
+      var f_source =  function(request, response) {
+        var thisr;
+
+        term = request.term;
+
+        if (serving){
+
+            return thisr;
+        }; //make sure we don't hit the server again before he responded
+
+        if ( term in cache ) {
+                thisr = cache[ term ] ;
+
+                response(thisr);
+
+                return;
+        }
+
+        serving = true;
+        request["productid"] = term;  //"XMM7560";
+        request["csrfmiddlewaretoken"] = $('[name=csrfmiddlewaretoken]').val();
+        request["action"] = "get_sps_tags";
+
+        //console.log(request);
+
+        $.post("/mani/ajax", request,
+
+        //console.log("request", request);
+
+        function(resp, status) {
+
+            thisr = resp;
+
+
+            cache[ term ] = [] ;
+            temp = thisr.split(",");
+
+            //console.log(" length of temp: " + temp.length );
+            //console.log(" temp= " + temp );
+            //console.log(" temp[0].trim()= " + temp[0].trim()  );
+            //console.log(" typeof temp= " + typeof(temp) );
+            //console.log(" is temp[0].trim() empty: " + jQuery.isEmptyObject(temp[0].trim()));
+
+            //console.log(" length of cache: " + cache[ term ].length );
+            //console.log(" index of whitespace in temp: " + temp.indexOf(' ') );
+
+            for ( i=0; i<temp.length; i++ )  {
+                //console.log(" len of temp[i].trim(): " + temp[i].trim().length );
+                if (temp[i].trim().length > 0) {
+                    cache[ term ].push( temp[i].trim() );
+                }
+
+                //console.log(" cache[term]: " + cache[ term ] );
+            }
+
+            //console.log(" length of cache: " + cache[ term ].length );
+
+            serving = false;
+            response(cache[ term ]);
+
+            //response(resp);
+            //return ;
+
+            }
+
+        } //callback function(resp, status)
+        ); // post()
+       }; // f_source
+
+
+
+       $( "#id_baseline1" ).keyup(function() {
+            typedelay( function(){
+                alert('Time elapsed!');
+            }, 1000 );
+
+            $(this).autocomplete({
+            delay: 500, //1000
+            source: f_source,
+            minLength: 4,
+            highlight:true,
+
+            select: function( event, ui ) {
+                //console.log("base1 choosed this " + this); // this = [object HTMLInputElement]
+                //console.log("base1 choosed this.value " + this.value); //this.value = xmm7360
+                /* if $( "#id_baseline2" ).value == undefined {
+                  $( "#id_baseline2" ).source = $( "#id_baseline1" ).source ;
+                } ; */
+                return true;  // false means keep type in untouched
+            }//select
+            }) ; //autocomplete
+        }
+        ); /*.data( "ui-autocomplete" )._renderItem = function( ul, item ) {
+
+                return $( "<li>" ).append( "<a href='/refer" + item[0]+ "?srcterm=" + term + "'>" + item["value"] + "</a>" ).appendTo( ul ); }; */
+
+        $( "#id_baseline2" ).autocomplete({
+          delay: 500,
+          source: f_source,
+          minLength: 4,  // ie. XMM7360 or XMM7 ... minimum characters need to input
+          highlight:true,
+          /*
+          select: function( event, ui ) {
+                         console.log("choosed " + this.value);
+                         return false;
+          }*/
+        }); /*.data( "ui-autocomplete" )._renderItem = function( ul, item ) {
+
+          return $( "<li>" ).append( "<a href='/refer" + item[0]+ "?srcterm=" + term + "'>" + item["value"] + "</a>" ).appendTo( ul ); }; */
+
+    });
+    </script>
+    <div class="input-group intel-box" id="format">
+        <h4>Select format:</h4>
+        <div class="radio">
+            <label>
+                <input name="format" type="radio" value="table" checked /> Compressed table <small class="text-muted">(Best suited for <b>Release Notes</b> generation)</small>
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input name="format" type="radio" value="list" /> Detailed list <small class="text-muted">(For complete changeset including merges)</small>
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input name="format" type="radio" value="excel" /> Formatted as <i class="intelicon intelicon-ms-excel-solid text-primary"></i>Excel document <small class="text-muted">(With additional UTP information)</small>
+            </label>
+        </div>
+    </div>
+    <div class="intel-box text-muted">
+        <h4>Hint:</h4>
+        <i class="intelicon-find-an-expert intelicon-active-info intelicon-large"></i>
+        Feel free to specify each input as <b>SPS Version</b> or <b>TCloud testname</b>.
+    </div>
+
+</div>
+<script>
+/*
+    $('#format input').on('change', function(e) {
+        console.log(e);
+        var action = e.currentTarget.value;
+        console.log("Updating action to "+action);
+        $('#submitForm').attr('action', action);
+    });
+*/
+
+
+    $('#submitForm').submit(function(ev) {
+            console.log("submit is starting ! ");
+
+            /*
+            var a = $('#submitForm input[name=file1]');
+            var b = $('#submitForm input[name=file2]');
+            var c = $('input[name=format]:checked');
+
+            if (a.val() && b.val() && c.val()) {
+                var format = c.val();
+                var params = ['/mani',
+                                encodeURIComponent(a.val()),
+                                encodeURIComponent(b.val())]
+                if (format == 'excel') {
+                    params.push(format);
+                } else {
+                    params.push('#'+format);
+                }
+                window.location = params.join('/');
+            }
+            else {
+                if (!a.val())
+                    a.attr('class', a.attr('class') + ' has-error');
+                if (!b.val())
+                    b.attr('class', b.attr('class') + ' has-error');
+                if (!c.val())
+                    c.attr('class', c.attr('class') + ' has-error');
+                $('#error-box').show();
+            }
+            ev.preventDefault();  */
+    });
+</script>
+
+{% endblock content %}
+
